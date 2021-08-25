@@ -1,6 +1,5 @@
 import torch
 import pytorch_lightning as pl
-import random
 
 from x_transformers import *
 from x_transformers.autoregressive_wrapper import *
@@ -10,6 +9,8 @@ from timm.models.vision_transformer import VisionTransformer
 from timm.models.resnetv2 import ResNetV2
 from timm.models.layers import StdConv2dSame
 from functools import partial
+
+import utils
 
 class TransformerOCR(pl.LightningModule):
     def __init__(self, cfg, tokenizer):
@@ -52,10 +53,16 @@ class TransformerOCR(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = getattr(torch.optim, self.cfg.optimizer)
         optimizer = optimizer(self.parameters(), lr=self.cfg.lr)
-        scheduler = getattr(torch.optim.lr_scheduler, self.cfg.scheduler)
-        scheduler = {'scheduler': scheduler(optimizer, self.cfg.max_lr,
-            total_steps=int(295805/self.cfg.batch_size*self.cfg.max_epochs)),
-                     'interval': 'step'}
+
+        try:
+            scheduler = getattr(utils, self.cfg.scheduler)
+        except ModuleNotFoundError:
+            scheduler = getattr(torch.optim.lr_scheduler, self.cfg.scheduler)
+
+        scheduler_cfg = getattr(self.cfg, self.cfg.scheduler)
+        scheduler = {'scheduler': scheduler(optimizer, **scheduler_cfg),
+            'interval': self.cfg.scheduler_interval,
+            'name': self.cfg.scheduler}
         return [optimizer], [scheduler]
 
     def make_len_mask(self, inp):
@@ -118,12 +125,19 @@ class TransformerOCR(pl.LightningModule):
         val_loss = sum([x['val_loss'] for x in outputs]) / len(outputs)
         acc = sum([x['acc'] for x in outputs]) / len(outputs)
 
-        rand_idx_1 = random.choice(list(range(len(outputs))))
-        rand_idx_2 = random.choice(list(range(len(outputs[-1]['results']['gt'][-1]))))
-        print('\n\ngt:{} | pred: {}'.format(outputs[rand_idx_1]['results']['gt'][rand_idx_2],
-                                            outputs[rand_idx_1]['results']['pred'][rand_idx_2]))
+        wrong_cases = []
+        for output in outputs:
+            for i in range(len(output['results']['gt'])):
+                gt = output['results']['gt'][i]
+                pred = output['results']['pred'][i]
+                if gt != pred:
+                    wrong_cases.append("gt : {} / pred : {}\n".format(gt, pred))
+
         self.log('val_loss', val_loss)
         self.log('accuracy', acc)
+
+        # custom text logging
+        self.logger.log_text("wrong_case", "".join(wrong_cases), self.global_step)
 
 
 class CustomARWrapper(AutoregressiveWrapper):
