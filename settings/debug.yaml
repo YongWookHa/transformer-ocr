@@ -6,11 +6,11 @@ tokenizer: "dataset/R_Free/tokenizer.pkl"
 output_path: "outputs"
 model_path: "checkpoints"
 load_chkpt: null # continue training
-name: "transformer-ocr test 0"
+name: "transformer-ocr test 2"
 
 # Training parameters
-epochs: 10
-batchsize: 8
+epochs: 60
+batchsize: 128
 
 # Testing parameters
 testbatchsize: 20
@@ -18,11 +18,23 @@ valbatches: 100
 temperature: 0.2
 
 # Optimizer configurations
-optimizer: "Adam"
-scheduler: "OneCycleLR"
-lr: 0.001
-max_lr: 0.005
-betas: [0.9, 0.999]
+optimizer: "AdamW"
+
+# scheduler: ["CosineAnnealingWarmUpRestarts", "OneCycleLR"]
+scheduler: "CosineAnnealingWarmUpRestarts"
+scheduler_interval: "epoch"
+lr: 0.0
+
+CosineAnnealingWarmUpRestarts:
+  T_0: 20
+  T_mult: 2.0
+  eta_max: 0.003
+  T_up: 1
+  gamma: 0.5
+
+OneCycleLR:
+  max_lr: 0.003
+  total_steps: 200000
 
 # Parameters for model architectures
 max_width: 672
