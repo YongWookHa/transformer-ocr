@@ -2,10 +2,9 @@ import torch
 import pytorch_lightning as pl
 import argparse
 
-from pytorch_lightning.loggers import TensorBoardLogger
 from models import TransformerOCR
 from dataset import CustomDataset, CustomCollate, Tokenizer
-from utils import load_setting, save_tokenizer
+from utils import load_setting, save_tokenizer, CustomTensorBoardLogger
 
 from torch.utils.data import DataLoader
 
@@ -51,7 +50,7 @@ if __name__ == "__main__":
     if cfg.resume_train:
         model = model.load_from_checkpoint(cfg.resume_train)
 
-    logger = TensorBoardLogger("tb_logs", name="model", version=cfg.version)
+    logger = CustomTensorBoardLogger("tb_logs", name="model", version=cfg.version)
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
@@ -60,12 +59,13 @@ if __name__ == "__main__":
         save_top_k=3,
         mode="min",
     )
+    lr_callback = pl.callbacks.LearningRateMonitor(logging_interval='step')
 
     device_cnt = torch.cuda.device_count()
     trainer = pl.Trainer(gpus=device_cnt, max_epochs=cfg.max_epochs, logger=logger,
         num_sanity_val_steps=1, accelerator="ddp" if device_cnt > 1 else None,
-        callbacks=[ckpt_callback,], resume_from_checkpoint=cfg.resume_train)
+        callbacks=[ckpt_callback,lr_callback], resume_from_checkpoint=cfg.resume_train)
 
-    trainer.fit(model, train_dataloader=train_dataloader, val_dataloaders=valid_dataloader)
+    trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
 
     trainer = pl.Trainer()
