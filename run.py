@@ -53,11 +53,11 @@ if __name__ == "__main__":
     logger = CustomTensorBoardLogger("tb_logs", name="model", version=cfg.version)
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
-        monitor="val_loss",
+        monitor="accuracy",
         dirpath=f"checkpoints/version_{cfg.version}",
-        filename="checkpoints-{epoch:02d}-{val_loss:.5f}",
+        filename="checkpoints-{epoch:02d}-{accuracy:.5f}",
         save_top_k=3,
-        mode="min",
+        mode="max",
     )
     lr_callback = pl.callbacks.LearningRateMonitor(logging_interval='step')
 
