@@ -33,7 +33,11 @@ class CustomDataset(torch.utils.data.Dataset):
         skip_cnt, token_cnt = 0, 4
         with open(txt_fn, 'r', encoding='utf8') as f:
             for line in f:
-                fn, text = line.strip().split('\t')
+                try:
+                    fn, text = line.strip().split('\t')
+                except ValueError:
+                    skip_cnt += 1
+                    continue
                 if cfg.max_seq_len < len(text) + 2:
                     # we will add [BOS] and [EOS]
                     skip_cnt += 1
