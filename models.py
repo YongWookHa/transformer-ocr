@@ -1,4 +1,5 @@
 import torch
+import random
 import pytorch_lightning as pl
 
 from x_transformers import *
@@ -131,13 +132,14 @@ class TransformerOCR(pl.LightningModule):
                 gt = output['results']['gt'][i]
                 pred = output['results']['pred'][i]
                 if gt != pred:
-                    wrong_cases.append("gt : {} / pred : {}\n".format(gt, pred))
+                    wrong_cases.append("gt:{}~pred:{}".format(gt, pred))
+        wrong_cases = random.sample(wrong_cases, 10)
 
         self.log('val_loss', val_loss)
         self.log('accuracy', acc)
 
         # custom text logging
-        self.logger.log_text("wrong_case", "".join(wrong_cases), self.global_step)
+        self.logger.log_text("wrong_case", " | ".join(wrong_cases), self.global_step)
 
 
 class CustomARWrapper(AutoregressiveWrapper):
