@@ -1,8 +1,8 @@
 # Input/Output/Name
-image_dir: "dataset//preprocessed_image"
+image_dir: "dataset/preprocessed_image"
 train_data: "dataset/train.txt"
 val_data: "dataset/val.txt"
-tokenizer: "dataset/HW_OCR_0821/3.Annotation/tokenizer.pkl"
+tokenizer: "dataset/tokenizer.pkl"
 output_path: "outputs"
 model_path: "checkpoints"
 load_chkpt: null # continue training
