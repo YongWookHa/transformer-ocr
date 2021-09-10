@@ -11,7 +11,7 @@ from timm.models.resnetv2 import ResNetV2
 from timm.models.layers import StdConv2dSame
 from functools import partial
 
-import utils
+from utils import CosineAnnealingWarmUpRestarts
 
 class TransformerOCR(pl.LightningModule):
     def __init__(self, cfg, tokenizer):
@@ -55,15 +55,23 @@ class TransformerOCR(pl.LightningModule):
         optimizer = getattr(torch.optim, self.cfg.optimizer)
         optimizer = optimizer(self.parameters(), lr=self.cfg.lr)
 
-        try:
-            scheduler = getattr(utils, self.cfg.scheduler)
-        except ModuleNotFoundError:
+        if self.cfg.scheduler == "CosineAnnealingWarmUpRestarts":
+            scheduler = CosineAnnealingWarmUpRestarts
+            scheduler = {'scheduler': scheduler(optimizer,
+                    T_0=self.cfg.T_0,
+                    T_mult=int(self.cfg.T_mult),
+                    eta_max=self.cfg.eta_max,
+                    T_up=self.cfg.T_up,
+                    gamma=self.cfg.gamma
+                ),
+                'interval': 'epoch',
+                'name': self.cfg.scheduler}
+        else:
             scheduler = getattr(torch.optim.lr_scheduler, self.cfg.scheduler)
-
-        scheduler_cfg = getattr(self.cfg, self.cfg.scheduler)
-        scheduler = {'scheduler': scheduler(optimizer, **scheduler_cfg),
-            'interval': self.cfg.scheduler_interval,
-            'name': self.cfg.scheduler}
+            scheduler = {'scheduler': scheduler(optimizer, self.cfg.max_lr,
+                total_steps=int(295805/self.cfg.batch_size*self.cfg.max_epochs)),
+                     'interval': 'step',
+                     'name': self.cfg.scheduler}
         return [optimizer], [scheduler]
 
     def make_len_mask(self, inp):
