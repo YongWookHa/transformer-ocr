@@ -64,7 +64,8 @@ if __name__ == "__main__":
     device_cnt = torch.cuda.device_count()
     trainer = pl.Trainer(gpus=device_cnt, max_epochs=cfg.max_epochs, logger=logger,
         num_sanity_val_steps=1, accelerator="ddp" if device_cnt > 1 else None,
-        callbacks=[ckpt_callback,lr_callback], resume_from_checkpoint=cfg.resume_train)
+        callbacks=[ckpt_callback,lr_callback],
+        resume_from_checkpoint=cfg.resume_train if cfg.resume_train else None)
 
     trainer.fit(model, train_dataloader=train_dataloader, val_dataloaders=valid_dataloader)
 
