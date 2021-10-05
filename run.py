@@ -66,6 +66,6 @@ if __name__ == "__main__":
         num_sanity_val_steps=1, accelerator="ddp" if device_cnt > 1 else None,
         callbacks=[ckpt_callback,lr_callback], resume_from_checkpoint=cfg.resume_train)
 
-    trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
+    trainer.fit(model, train_dataloader=train_dataloader, val_dataloaders=valid_dataloader)
 
     trainer = pl.Trainer()
